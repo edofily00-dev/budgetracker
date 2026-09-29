@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Budget Tracker</title>
+<meta name="description" content="Traccia le tue spese mensili: entrate, spese necessarie, spese per svago e risparmi." />
+
+<!-- PWA / iPhone "Aggiungi a Home" -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#6b4ce6" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Budget" />
+<link rel="apple-touch-icon" href="icon-180.png" />
+<link rel="icon" href="icon-192.png" />
+
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="app-header">
+  <h1>💶 Budget Tracker</h1>
+</header>
+
+<main id="app">
+
+  <!-- ============ RIEPILOGO MESE CORRENTE ============ -->
+  <section id="view-riepilogo" class="view">
+
+    <div class="month-switcher">
+      <button id="btn-prev-month" class="icon-btn" aria-label="Mese precedente">‹</button>
+      <div class="month-label" id="current-month-label">—</div>
+      <button id="btn-next-month" class="icon-btn" aria-label="Mese successivo">›</button>
+    </div>
+
+    <div class="card summary-card">
+      <div class="summary-grid" id="summary-grid"></div>
+      <canvas id="pie-chart" class="pie-canvas" height="200"></canvas>
+    </div>
+
+    <div class="bucket-card" data-bucket="necessarie">
+      <div class="bucket-header necessarie" data-toggle>
+        <h2>Spese necessarie</h2>
+        <span class="bucket-total" id="total-necessarie">€ 0,00</span>
+        <span class="chevron">⌄</span>
+      </div>
+      <ul class="item-list" id="list-necessarie"></ul>
+      <button class="add-btn necessarie" data-add="necessarie">+ Aggiungi spesa necessaria</button>
+    </div>
+
+    <div class="bucket-card" data-bucket="svago">
+      <div class="bucket-header svago" data-toggle>
+        <h2>Spese per svago</h2>
+        <span class="bucket-total" id="total-svago">€ 0,00</span>
+        <span class="chevron">⌄</span>
+      </div>
+      <ul class="item-list" id="list-svago"></ul>
+      <button class="add-btn svago" data-add="svago">+ Aggiungi spesa svago</button>
+    </div>
+
+    <div class="bucket-card" data-bucket="investimenti">
+      <div class="bucket-header investimenti" data-toggle>
+        <h2>Investimenti</h2>
+        <span class="bucket-total" id="total-investimenti">€ 0,00</span>
+        <span class="chevron">⌄</span>
+      </div>
+      <ul class="item-list" id="list-investimenti"></ul>
+      <button class="add-btn investimenti" data-add="investimenti">+ Aggiungi investimento</button>
+    </div>
+
+    <div class="bucket-card" data-bucket="entrate">
+      <div class="bucket-header entrate" data-toggle>
+        <h2>Entrate extra</h2>
+        <span class="bucket-total" id="total-entrate">€ 0,00</span>
+        <span class="chevron">⌄</span>
+      </div>
+      <ul class="item-list" id="list-entrate"></ul>
+      <button class="add-btn entrate" data-add="entrate">+ Aggiungi entrata extra</button>
+    </div>
+
+    <div class="card income-card">
+      <h2>Stipendio mese</h2>
+      <div class="inline-form">
+        <span class="prefix">€</span>
+        <input type="number" id="input-stipendio" inputmode="decimal" step="0.01" placeholder="0,00" />
+      </div>
+    </div>
+
+    <div class="month-danger-zone">
+      <button id="btn-delete-month" class="icon-btn danger-icon" aria-label="Elimina tutti i dati del mese" title="Elimina tutti i dati del mese">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+          <rect x="3" y="5.5" width="18" height="2.6" rx="1.3" />
+          <rect x="9" y="2" width="6" height="3" rx="1.2" />
+          <path d="M5.2 8.8h13.6l-1.05 12.4a2 2 0 0 1-1.99 1.83H8.24a2 2 0 0 1-1.99-1.83L5.2 8.8Z" />
+          <rect x="9.2" y="10.8" width="1.7" height="8.4" rx="0.85" fill="var(--bg)" />
+          <rect x="11.15" y="10.8" width="1.7" height="8.4" rx="0.85" fill="var(--bg)" />
+          <rect x="13.1" y="10.8" width="1.7" height="8.4" rx="0.85" fill="var(--bg)" />
+        </svg>
+      </button>
+    </div>
+
+  </section>
+
+  <!-- ============ STORICO ============ -->
+  <section id="view-storico" class="view hidden">
+    <div class="month-switcher">
+      <button id="btn-prev-year" class="icon-btn" aria-label="Anno precedente">‹</button>
+      <div class="month-label" id="current-history-year">—</div>
+      <button id="btn-next-year" class="icon-btn" aria-label="Anno successivo">›</button>
+    </div>
+
+    <div class="card">
+      <h2>Andamento nel tempo</h2>
+      <canvas id="trend-chart" class="trend-canvas" height="220"></canvas>
+      <div class="legend-row">
+        <span><i class="dot necessarie"></i> Spese necessarie<br />+ investimenti</span>
+        <span><i class="dot svago"></i> Spese svago</span>
+        <span><i class="dot risparmi"></i> Risparmi</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Medie storiche</h2>
+      <div class="summary-grid" id="averages-grid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Storico mensile</h2>
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Mese</th>
+              <th>Entrate</th>
+              <th class="wrap-header" title="Spese necessarie + investimenti">Necessarie<br />+ investimenti</th>
+              <th>Svago</th>
+              <th>Risparmi</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ANALISI ============ -->
+  <section id="view-analisi" class="view hidden">
+
+    <div class="card">
+      <div class="month-switcher">
+        <button id="btn-analisi-prev-year" class="icon-btn" aria-label="Anno precedente">‹</button>
+        <div class="month-label">Panoramica <span id="analisi-overview-year">—</span></div>
+        <button id="btn-analisi-next-year" class="icon-btn" aria-label="Anno successivo">›</button>
+      </div>
+      <div class="summary-grid analisi-kpi-grid" id="analisi-overview-year-grid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Panoramica · mese corrente</h2>
+      <div class="summary-grid cols-2 analisi-kpi-grid" id="analisi-overview-month-grid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Filtri</h2>
+      <div class="split-form">
+        <label>Da mese <input type="month" id="analisi-from" /></label>
+        <label>A mese <input type="month" id="analisi-to" /></label>
+      </div>
+      <div class="filter-form">
+        <label>Parola chiave
+          <input type="text" id="analisi-query" placeholder="Cerca nella nota…" autocomplete="off" />
+        </label>
+        <label>Categoria
+          <select id="analisi-category"></select>
+        </label>
+      </div>
+      <p class="hint" style="margin-bottom:6px">Tipo di voce</p>
+      <div class="tipo-checks" id="analisi-tipo-checks">
+        <label><input type="checkbox" value="necessarie" checked /> Necessarie</label>
+        <label><input type="checkbox" value="svago" checked /> Svago</label>
+        <label><input type="checkbox" value="investimenti" checked /> Investimenti</label>
+        <label><input type="checkbox" value="entrate" checked /> Entrate</label>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button id="btn-analisi-reset" class="btn secondary">Reimposta filtri</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Risultati</h2>
+      <p class="hint" id="analisi-summary-line"></p>
+      <div class="summary-grid analisi-kpi-grid" id="analisi-kpi-grid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Per categoria</h2>
+      <div id="analisi-category-breakdown"></div>
+    </div>
+
+    <div class="card">
+      <h2>Voci (<span id="analisi-count">0</span>)</h2>
+      <ul class="item-list" id="analisi-item-list"></ul>
+    </div>
+
+  </section>
+
+  <!-- ============ IMPOSTAZIONI ============ -->
+  <section id="view-impostazioni" class="view hidden">
+
+    <div class="card">
+      <h2>Bonifico ricorrente tra conti</h2>
+      <p class="hint">Calcola quanto trasferire ogni mese da un conto all'altro per coprire le spese fisse
+        mensili che paghi da lì.</p>
+
+      <div class="bonifico-total" id="bonifico-total-box">
+        <div class="bonifico-total-value" id="bonifico-total-value">€ 0,00</div>
+        <div class="bonifico-total-sub" id="bonifico-total-sub"></div>
+      </div>
+
+      <div class="split-form" style="margin-top:14px">
+        <label>Da conto <input type="text" id="bonifico-from-label" maxlength="20" /></label>
+        <label>A conto <input type="text" id="bonifico-to-label" maxlength="20" /></label>
+      </div>
+
+      <ul class="item-list" id="list-bonifico-monthly"></ul>
+      <button class="add-btn accent" data-bonifico-add="monthly">+ Aggiungi spesa mensile</button>
+    </div>
+
+    <div class="card collapsible">
+      <div class="card-header" data-toggle>
+        <h2>Ripartizione budget</h2>
+        <span class="chevron">⌄</span>
+      </div>
+      <div class="collapsible-body">
+        <p class="hint">Percentuali target su cui vengono calcolate le soglie massime/minime (devono sommare a 100).</p>
+        <div class="split-form budget-split">
+          <label><span class="split-label-text">Necessarie + investimenti</span> <input type="number" id="split-necessarie" min="0" max="100" /> %</label>
+          <label><span class="split-label-text">Svago</span> <input type="number" id="split-svago" min="0" max="100" /> %</label>
+          <label><span class="split-label-text">Risparmi</span> <input type="number" id="split-risparmi" min="0" max="100" /> %</label>
+        </div>
+        <div id="split-warning" class="warning hidden">⚠️ Le percentuali devono sommare a 100.</div>
+
+        <p class="hint" style="margin-top:16px">Base di calcolo delle soglie:</p>
+        <div class="radio-row">
+          <label><input type="radio" name="threshold-base" value="totale" /> Stipendio + entrate extra</label>
+          <label><input type="radio" name="threshold-base" value="stipendio" /> Solo stipendio</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card collapsible">
+      <div class="card-header" data-toggle>
+        <h2>Categorie rapide</h2>
+        <span class="chevron">⌄</span>
+      </div>
+      <div class="collapsible-body">
+        <p class="hint">Personalizza le categorie suggerite quando aggiungi una voce.</p>
+        <div id="categories-editor"></div>
+      </div>
+    </div>
+
+    <div class="card collapsible">
+      <div class="card-header" data-toggle>
+        <h2>Spese fisse mensili</h2>
+        <span class="chevron">⌄</span>
+      </div>
+      <div class="collapsible-body">
+        <p class="hint">Le spese che aggiungi qui vengono inserite automaticamente in ogni mese, anche in
+          quelli già aperti in precedenza: creare o modificare una spesa fissa aggiorna subito anche i
+          mesi già esistenti. Per una spesa necessaria o per svago puoi anche decidere se genera il round
+          up ad ogni sua occorrenza mensile (se il round up è attivo qui sotto).</p>
+        <ul class="item-list" id="list-recurring"></ul>
+        <button class="add-btn accent" id="btn-add-recurring">+ Aggiungi spesa fissa</button>
+      </div>
+    </div>
+
+    <div class="card collapsible">
+      <div class="card-header" data-toggle>
+        <h2>Spese rateali</h2>
+        <span class="chevron">⌄</span>
+      </div>
+      <div class="collapsible-body">
+        <p class="hint">Per spese pagate in più rate (es. un acquisto in 5 mensilità): inserisci l'importo
+          totale della spesa, scegli mese di partenza e numero di rate — l'importo verrà diviso automaticamente
+          e le rate inserite da sole, una al mese, con l'indicazione "n/totale", poi si fermano.
+          Creare o modificare un piano aggiorna subito anche i mesi già aperti.</p>
+        <ul class="item-list" id="list-installments"></ul>
+        <button class="add-btn accent" id="btn-add-installment">+ Aggiungi spesa rateale</button>
+      </div>
+    </div>
+
+    <div class="card collapsible">
+      <div class="card-header" data-toggle>
+        <h2>Round up</h2>
+        <span class="chevron">⌄</span>
+      </div>
+      <div class="collapsible-body">
+        <p class="hint">Ad ogni spesa necessaria o per svago con il flag "Genera round up" attivo, arrotonda
+          l'importo all'euro successivo (anche se è già una cifra tonda) e investe la differenza in un'unica
+          voce in Investimenti, che si crea da sola e cresce ad ogni spesa del mese.</p>
+        <div class="checkbox-row">
+          <input type="checkbox" id="roundup-enabled" />
+          <label for="roundup-enabled">Attiva round up</label>
+        </div>
+        <div class="split-form" style="margin-top:4px">
+          <label>Nome voce <input type="text" id="roundup-name" maxlength="40" /></label>
+          <label>Categoria <select id="roundup-category"></select></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card collapsible">
+      <div class="card-header" data-toggle>
+        <h2>Backup dati</h2>
+        <span class="chevron">⌄</span>
+      </div>
+      <div class="collapsible-body">
+        <p class="hint">I dati sono salvati solo su questo dispositivo/browser. Esporta un backup regolarmente.</p>
+        <div class="btn-row">
+          <button id="btn-export" class="btn">Esporta backup (JSON)</button>
+          <button id="btn-import" class="btn secondary">Importa backup</button>
+          <input type="file" id="input-import-file" accept="application/json" class="hidden" />
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button id="btn-reset" class="btn danger">Reimposta tutti i dati</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<nav class="tabbar">
+  <button class="tab-btn active" data-view="riepilogo">
+    <span class="tab-icon">📊</span><span>Riepilogo</span>
+  </button>
+  <button class="tab-btn" data-view="storico">
+    <span class="tab-icon">📈</span><span>Storico</span>
+  </button>
+  <button class="tab-btn" data-view="analisi">
+    <span class="tab-icon">🔎</span><span>Analisi</span>
+  </button>
+  <button class="tab-btn" data-view="impostazioni">
+    <span class="tab-icon">⚙️</span><span>Impostazioni</span>
+  </button>
+</nav>
+
+<!-- ============ MODALE AGGIUNGI/MODIFICA VOCE ============ -->
+<div id="item-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-sheet">
+    <h3 id="modal-title">Aggiungi voce</h3>
+    <form id="item-form">
+      <label><span id="modal-amount-label">Importo</span>
+        <div class="inline-form"><span class="prefix">€</span><input type="number" id="modal-amount" inputmode="decimal" step="0.01" required /></div>
+      </label>
+      <label>Nota / descrizione
+        <div class="note-autocomplete">
+          <input type="text" id="modal-note" required autocomplete="off" />
+          <div id="modal-note-suggestions" class="note-suggestions hidden"></div>
+        </div>
+      </label>
+      <label>Categoria
+        <select id="modal-category"></select>
+      </label>
+      <div class="checkbox-row-group">
+        <div class="checkbox-row" id="modal-rateizza-row">
+          <input type="checkbox" id="modal-rateizza" />
+          <label for="modal-rateizza">Rateizza</label>
+        </div>
+        <div class="checkbox-row hidden" id="modal-roundup-row">
+          <input type="checkbox" id="modal-roundup" checked />
+          <label for="modal-roundup">Genera round up</label>
+        </div>
+      </div>
+      <label id="modal-installments-row" class="hidden">Numero di rate (inclusa questa)
+        <input type="number" id="modal-installments-count" class="plain-number" min="2" max="60" step="1" value="2" />
+      </label>
+      <p id="modal-rate-preview" class="hint hidden"></p>
+      <div class="modal-actions">
+        <button type="button" id="modal-delete" class="btn danger hidden">Elimina</button>
+        <button type="button" id="modal-cancel" class="btn secondary">Annulla</button>
+        <button type="submit" class="btn">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ MODALE SPESA FISSA ============ -->
+<div id="recurring-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-sheet">
+    <h3 id="recurring-modal-title">Aggiungi spesa fissa</h3>
+    <form id="recurring-form">
+      <label>Tipo
+        <select id="recurring-bucket">
+          <option value="necessarie">Spesa necessaria</option>
+          <option value="svago">Spesa per svago</option>
+          <option value="investimenti">Investimento</option>
+        </select>
+      </label>
+      <label>Importo
+        <div class="inline-form"><span class="prefix">€</span><input type="number" id="recurring-amount" inputmode="decimal" step="0.01" required /></div>
+      </label>
+      <label>Nota / descrizione
+        <input type="text" id="recurring-note" placeholder="Es. Mutuo" required />
+      </label>
+      <label>Categoria
+        <select id="recurring-category"></select>
+      </label>
+      <div class="checkbox-row hidden" id="recurring-roundup-row">
+        <input type="checkbox" id="recurring-roundup" />
+        <label for="recurring-roundup">Genera round up</label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="recurring-delete" class="btn danger hidden">Elimina</button>
+        <button type="button" id="recurring-cancel" class="btn secondary">Annulla</button>
+        <button type="submit" class="btn">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ MODALE SPESA RATEALE ============ -->
+<div id="installment-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-sheet">
+    <h3 id="installment-modal-title">Aggiungi spesa rateale</h3>
+    <form id="installment-form">
+      <label>Tipo
+        <select id="installment-bucket">
+          <option value="necessarie">Spesa necessaria</option>
+          <option value="svago">Spesa per svago</option>
+          <option value="investimenti">Investimento</option>
+        </select>
+      </label>
+      <label>Importo totale
+        <div class="inline-form"><span class="prefix">€</span><input type="number" id="installment-amount" inputmode="decimal" step="0.01" required /></div>
+      </label>
+      <label>Nota / descrizione
+        <input type="text" id="installment-note" placeholder="Es. Divano (rate)" required />
+      </label>
+      <label>Categoria
+        <select id="installment-category"></select>
+      </label>
+      <label>Numero di rate
+        <input type="number" id="installment-count" class="plain-number" min="2" max="60" step="1" required />
+      </label>
+      <p id="installment-rate-preview" class="hint hidden"></p>
+      <label>Mese di partenza
+        <input type="month" id="installment-start" required />
+      </label>
+      <div class="modal-actions">
+        <button type="button" id="installment-delete" class="btn danger hidden">Elimina piano</button>
+        <button type="button" id="installment-cancel" class="btn secondary">Annulla</button>
+        <button type="submit" class="btn">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ MODALE VOCE BONIFICO ============ -->
+<div id="bonifico-modal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-sheet">
+    <h3 id="bonifico-modal-title">Aggiungi spesa</h3>
+    <form id="bonifico-form">
+      <label>Importo
+        <div class="inline-form"><span class="prefix">€</span><input type="number" id="bonifico-amount" inputmode="decimal" step="0.01" required /></div>
+      </label>
+      <label>Nota / descrizione
+        <input type="text" id="bonifico-note" placeholder="Es. Mutuo" required />
+      </label>
+      <div class="modal-actions">
+        <button type="button" id="bonifico-delete" class="btn danger hidden">Elimina</button>
+        <button type="button" id="bonifico-cancel" class="btn secondary">Annulla</button>
+        <button type="submit" class="btn">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="storage.js"></script>
+<script src="charts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

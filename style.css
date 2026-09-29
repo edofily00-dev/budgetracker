@@ -1,0 +1,757 @@
+:root {
+  --necessarie: #e8a33d;
+  --necessarie-bg: #fdf1de;
+  /* Svago: blu. */
+  --svago: #4a90d9;
+  --svago-bg: #e3eefc;
+  /* Entrate extra: stesso verde dei Risparmi (erano prima il verde di Svago,
+     libero ora che Svago è diventato blu). Investimenti: giallo, invariato. */
+  --entrate: #4caf7d;
+  --entrate-bg: #e6f5ec;
+  --investimenti: #e0c93d;
+  --investimenti-bg: #fbf7dd;
+  --risparmi: #4caf7d;
+  --risparmi-bg: #e6f5ec;
+
+  --bg: #f4f5f7;
+  --card-bg: #ffffff;
+  --text: #1c1e21;
+  --muted: #7a8291;
+  --border: #e6e8ec;
+  --danger: #d9534f;
+  --accent: #6b4ce6;
+  --accent-bg: #ede8fc;
+  --good: #2f9e56;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121316;
+    --card-bg: #1c1e22;
+    --text: #f0f1f3;
+    --muted: #9aa1ad;
+    --border: #2c2e33;
+    --necessarie-bg: #3a2f1a;
+    --svago-bg: #1a2f45;
+    --entrate-bg: #163b28;
+    --investimenti-bg: #38351a;
+    --risparmi-bg: #163b28;
+    --accent-bg: #2a2140;
+    --good: #3ab873;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-header {
+  padding: calc(env(safe-area-inset-top) + 14px) 16px 12px;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.app-header h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+#app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 12px 12px calc(90px + env(safe-area-inset-bottom));
+}
+
+.view.hidden { display: none; }
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Sezioni Impostazioni contraibili */
+.card.collapsible { padding: 0; }
+.card.collapsible .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.card.collapsible .card-header h2 { margin: 0; }
+.card.collapsible .collapsible-body { padding: 0 16px 16px; }
+.card.collapsible:not(.expanded) .collapsible-body { display: none; }
+
+.chevron {
+  display: inline-block;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.expanded .chevron { transform: rotate(180deg); }
+.hint {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+
+/* Month switcher */
+.month-switcher {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 4px 14px;
+}
+.month-label {
+  font-size: 17px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.icon-btn {
+  border: none;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 20px;
+  color: var(--text);
+}
+.icon-btn:active { background: var(--bg); }
+.icon-btn:disabled { opacity: 0.35; }
+
+.month-danger-zone {
+  display: flex;
+  justify-content: flex-end;
+  padding: 2px 4px 20px;
+}
+.danger-icon {
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  opacity: 0.5;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.danger-icon:active { opacity: 1; background: transparent; }
+
+/* Summary */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.summary-cell {
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+  border: 2px solid transparent;
+}
+.summary-cell.over-limit {
+  border-color: var(--danger);
+}
+.summary-cell .label {
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+  /* altezza fissa a 3 righe: così le etichette più lunghe che vanno a capo
+     due/tre volte (es. "Spese necessarie + investimenti") e quelle che stanno
+     su una riga sola (es. "Media svago") occupano lo stesso spazio, e i
+     valori sotto restano allineati indipendentemente dalla card. */
+  min-height: 3.75em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.summary-cell .value {
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.summary-cell .sub {
+  font-size: 10.5px;
+  line-height: 1.3;
+  opacity: 0.75;
+  margin-top: 2px;
+  /* Stesso motivo del .label sopra: con importi grandi "Massimo: 1.767,06 €"
+     può andare a capo mentre nelle card vicine "Massimo: 543,71 €" ci sta su
+     una riga sola. Riservando qui altezza fissa per 2 righe, le barre di
+     progresso sotto restano allineate a prescindere da quante cifre ha
+     l'importo. */
+  min-height: 2.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.summary-cell.necessarie { background: var(--necessarie-bg); color: var(--necessarie); }
+.summary-cell.svago { background: var(--svago-bg); color: var(--svago); }
+.summary-cell.risparmi { background: var(--risparmi-bg); color: var(--risparmi); }
+.summary-cell.neutral { background: var(--accent-bg); color: var(--accent); }
+.summary-cell .value, .summary-cell .sub { color: var(--text); }
+.summary-cell .value.good { color: var(--good); }
+.summary-cell .value.bad { color: var(--danger); }
+.summary-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.card h2 .hint-inline, .card h2 #analisi-overview-year { font-weight: 400; color: var(--muted); font-size: 13px; }
+
+.pie-canvas {
+  width: 100%;
+  height: 170px;
+  display: block;
+}
+
+/* progress bar under each summary cell */
+.progress-track {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(0,0,0,0.08);
+  margin-top: 6px;
+  overflow: hidden;
+}
+.progress-fill { height: 100%; border-radius: 3px; }
+.progress-fill.over { background: var(--danger) !important; }
+
+/* Income card */
+.inline-form {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: var(--bg);
+}
+.inline-form .prefix { color: var(--muted); margin-right: 6px; font-weight: 600; }
+.inline-form input {
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  color: var(--text);
+  width: 100%;
+  outline: none;
+}
+
+/* Bucket cards */
+.bucket-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.bucket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.bucket-header h2 { margin: 0; font-size: 14.5px; flex: 1; }
+.bucket-header.necessarie { background: var(--necessarie-bg); color: var(--necessarie); }
+.bucket-header.investimenti { background: var(--investimenti-bg); color: var(--investimenti); }
+.bucket-header.svago { background: var(--svago-bg); color: var(--svago); }
+.bucket-header.entrate { background: var(--entrate-bg); color: #a89417; }
+.bucket-total { font-weight: 700; font-size: 14px; color: var(--text); }
+.bucket-header .chevron { color: inherit; opacity: 0.7; }
+.bucket-card:not(.expanded) .item-list { display: none; }
+
+.item-list { list-style: none; margin: 0; padding: 0; }
+.item-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+.item-list li:active { background: var(--bg); }
+.item-note { font-size: 14px; }
+.item-category { display: block; font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+.item-amount { font-weight: 600; font-size: 14px; white-space: nowrap; margin-left: 10px; }
+/* Usati solo nell'elenco di Analisi, dove voci di tipo diverso (entrate e
+   uscite) compaiono fianco a fianco: il colore rende subito visibile il
+   segno, coerente con .summary-cell .value.good/.bad. */
+.item-amount.good { color: var(--good); }
+.item-amount.bad { color: var(--danger); }
+.item-empty { padding: 14px 16px; color: var(--muted); font-size: 13px; font-style: italic; }
+
+/* Analisi: elenco raggruppato per nome della transazione. L'<li> esterno
+   torna a essere un contenitore a blocco invece della riga singola prevista
+   da ".item-list li" (da cui ".item-list li.analisi-group", più specifico,
+   per avere la precedenza): l'header con nome/totale/chevron prende lui il
+   layout a riga, e le occorrenze del gruppo compaiono sotto solo quando
+   espanso, con lo stesso dettaglio (tipo · categoria · mese) di prima. */
+.item-list li.analisi-group { display: block; padding: 0; }
+.analisi-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.analisi-group-header:active { background: var(--bg); }
+.analisi-group-header .item-note { flex: 1; min-width: 0; }
+.analisi-group-count { font-size: 11.5px; color: var(--muted); flex-shrink: 0; }
+.analisi-group-children { list-style: none; margin: 0; padding: 0; background: var(--bg); }
+.analisi-group-children li {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 30px;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+}
+.analisi-group-children li:active { background: var(--border); }
+.analisi-group-children .item-category { flex: 1; min-width: 0; margin-top: 0; }
+
+.add-btn {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 12px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: left;
+  border-top: 1px solid var(--border);
+}
+.add-btn.necessarie { color: var(--necessarie); }
+.add-btn.investimenti { color: var(--investimenti); }
+.add-btn.svago { color: var(--svago); }
+.add-btn.entrate { color: #a89417; }
+.add-btn.accent { color: var(--accent); }
+.add-btn:active { background: var(--bg); }
+
+.bonifico-total {
+  background: var(--risparmi-bg);
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: center;
+}
+.bonifico-total-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--risparmi);
+}
+.bonifico-total-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.fisso-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  color: var(--muted);
+  vertical-align: middle;
+}
+.rata-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--investimenti-bg);
+  border: 1px solid var(--investimenti);
+  border-radius: 6px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  color: var(--investimenti);
+  vertical-align: middle;
+}
+
+/* Tab bar */
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border);
+  padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
+  z-index: 20;
+}
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 6px 0;
+}
+.tab-btn.active { color: var(--accent); font-weight: 600; }
+.tab-icon { font-size: 20px; line-height: 1; }
+
+/* Trend chart / history */
+.trend-canvas { width: 100%; height: 220px; display: block; }
+.legend-row {
+  display: flex;
+  gap: 6px 10px;
+  /* Niente a capo della riga: le tre voci restano sempre affiancate. Quella più
+     lunga ("Spese necessarie + investimenti") va a capo AL SUO INTERNO invece
+     di spingere le altre sulla riga sotto (vedi .legend-row span più sotto). */
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  /* Distribuisce lo spazio libero in eccesso in due spazi uguali TRA le voci
+     (non attorno), così la prima voce resta a filo del bordo sinistro e
+     l'ultima a filo del bordo destro: niente più spazio asimmetrico a destra,
+     e la separazione tra le tre voci cresce in modo uniforme. */
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.legend-row span {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  /* La prima voce ("Spese necessarie + investimenti") va a capo con un <br />
+     fisso nell'HTML (dopo "necessarie"), non affidandosi allo shrink del
+     flexbox: con flex-shrink la larghezza della casella viene stimata dal
+     motore di layout e può risultare più larga del testo effettivamente
+     andato a capo, lasciando uno spazio vuoto prima del pallino successivo.
+     Con un a capo deterministico la casella si adatta esattamente al testo,
+     quindi ogni voce sta a larghezza naturale (flex-basis auto, niente shrink). */
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.dot.necessarie { background: var(--necessarie); }
+.dot.svago { background: var(--svago); }
+.dot.risparmi { background: var(--risparmi); }
+
+.history-table-wrap { overflow-x: auto; }
+/* width:100% invece di auto+margin:auto: la tabella occupa tutta la card
+   invece di restare stretta al centro con grossi bordi vuoti ai lati. Padding
+   e font ridotti al minimo leggibile perché con 5 colonne (mese + 4 importi)
+   è facile sforare la larghezza dello schermo su iPhone. */
+.history-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+.history-table th, .history-table td {
+  text-align: center;
+  padding: 6px 3px;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--muted);
+  white-space: nowrap;
+}
+.history-table th:first-child, .history-table td:first-child { border-left: none; }
+/* Etichette lunghe come "Necessarie + investimenti": vanno a capo invece di
+   allargare la colonna, così la tabella resta leggibile su schermi stretti. */
+.history-table th.wrap-header { white-space: normal; line-height: 1.2; }
+.history-table tbody tr:nth-child(even) { background: var(--bg); }
+.history-table tbody tr:active { background: var(--border); }
+
+/* Settings */
+.split-form { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.split-form label {
+  flex: 1;
+  min-width: 90px;
+  font-size: 12.5px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+/* Nella riga "Ripartizione budget" un'etichetta più lunga (es. "Necessarie +
+   investimenti") può andare a capo mentre le altre restano su una riga sola:
+   riservando qui uno spazio fisso di 2 righe, gli input sotto restano allineati
+   indipendentemente da quanto testo contiene ciascuna etichetta. */
+.budget-split label .split-label-text {
+  display: block;
+  min-height: 2.4em;
+  line-height: 1.2;
+}
+.split-form input,
+.split-form select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 16px;
+  background: var(--bg);
+  color: var(--text);
+  width: 100%;
+}
+.warning { color: var(--danger); font-size: 12.5px; margin-top: 4px; }
+
+.radio-row { display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
+.radio-row label { display: flex; align-items: center; gap: 8px; }
+
+/* Analisi: filtri */
+.filter-form label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.filter-form label:last-child { margin-bottom: 10px; }
+.filter-form input[type="text"],
+.filter-form select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 16px;
+  margin-top: 4px;
+  background: var(--bg);
+  color: var(--text);
+}
+.tipo-checks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 14px; margin: 0 0 4px; }
+.tipo-checks label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 0 !important;
+}
+.tipo-checks input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+/* Analisi: risultati */
+.analisi-kpi-grid { margin-top: 4px; }
+.breakdown-row { margin-bottom: 12px; }
+.breakdown-row:last-child { margin-bottom: 0; }
+.breakdown-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.breakdown-label .breakdown-value { font-weight: 600; }
+.breakdown-label .breakdown-value.good { color: var(--good); }
+.breakdown-label .breakdown-value.bad { color: var(--danger); }
+
+#categories-editor .cat-group { margin-bottom: 14px; }
+#categories-editor .cat-group h4 {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+.cat-drag-hint { margin-top: -2px; font-size: 11px; }
+.cat-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.cat-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 6px 5px 6px;
+  font-size: 12.5px;
+}
+.cat-tag.dragging {
+  position: fixed;
+  z-index: 1000;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  opacity: 0.95;
+}
+.cat-tag-placeholder {
+  border: 1.5px dashed var(--muted);
+  border-radius: 20px;
+  opacity: 0.6;
+}
+.cat-drag-handle {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 2px 2px;
+  line-height: 1;
+  touch-action: none;
+  cursor: grab;
+}
+.cat-tag-label { padding: 0 2px; }
+.cat-tag button {
+  border: none;
+  background: none;
+  color: var(--muted);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 13px;
+  line-height: 1;
+}
+.cat-add-row { display: flex; gap: 6px; margin-top: 8px; }
+.cat-add-row input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 16px;
+  background: var(--bg);
+  color: var(--text);
+}
+.cat-add-row button {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  padding: 11px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.btn.secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn.danger { background: var(--danger); color: #fff; }
+.btn:active { opacity: 0.85; }
+
+/* Modal */
+.modal { position: fixed; inset: 0; z-index: 50; }
+.modal.hidden { display: none; }
+.modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.4); }
+.modal-sheet {
+  position: absolute;
+  left: 0; right: 0;
+  /* --keyboard-inset (impostata via JS con l'API visualViewport) sposta la
+     sheet sopra la tastiera quando questa è aperta e non ridimensiona il
+     layout viewport (tipico di iOS, specie in PWA) — altrimenti resta 0px e
+     la sheet è ancorata al fondo dello schermo come prima. */
+  bottom: var(--keyboard-inset, 0px);
+  background: var(--card-bg);
+  border-radius: 18px 18px 0 0;
+  padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+  max-width: 560px;
+  margin: 0 auto;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-sheet h3 { margin: 0 0 14px; font-size: 16px; }
+.modal-sheet label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.modal-sheet input[type="text"],
+.modal-sheet input[type="month"],
+.modal-sheet input.plain-number,
+.modal-sheet select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 16px;
+  margin-top: 4px;
+  background: var(--bg);
+  color: var(--text);
+}
+.note-autocomplete { position: relative; }
+.note-suggestions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  max-height: 168px;
+  overflow-y: auto;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  z-index: 5;
+}
+.note-suggestions.hidden { display: none; }
+.note-suggestions .suggestion-item {
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.note-suggestions .suggestion-item:last-child { border-bottom: none; }
+.note-suggestions .suggestion-item:active { background: var(--bg); }
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+/* Due checkbox-row affiancate (es. "Rateizza" e "Genera round up" nel modale
+   voce): stanno sulla stessa riga quando c'è spazio, vanno a capo su schermi
+   stretti senza sovrapporsi. */
+.checkbox-row-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+}
+.checkbox-row-group .checkbox-row {
+  flex: 1;
+  min-width: 150px;
+  margin-bottom: 0;
+}
+.checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+.checkbox-row label {
+  margin-bottom: 0 !important;
+  font-size: 13.5px !important;
+  color: var(--text) !important;
+}
+
+.modal-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.modal-actions .btn { flex: 1; }
+
+.hidden { display: none !important; }
